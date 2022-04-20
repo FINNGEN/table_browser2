@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html itemscope="" itemtype="http://schema.org/WebPage" lang="en">
+  <head>
+    <title>browser</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      href="{{ url_for('static', filename='style.css') }}"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <link
+      href="{{ url_for('static', filename='react-table.css') }}"
+      rel="stylesheet"
+      type="text/css"
+    />
+  </head>
+  <body>
+    {% if current_user and current_user.is_authenticated %}
+    <div style="padding-left: 10px; padding-top: 10px;">
+      <a href="{{ url_for('logout') }}" style="color: #333; font-weight: bold;"
+        >logout ({{ current_user.email }})</a
+      >
+    </div>
+    {% endif %}
+    <div id="reactEntry"></div>
+    <script
+      type="text/javascript"
+      src="{{ url_for('static', filename='bundle.js') }}"
+    ></script>
+  </body>
+</html>

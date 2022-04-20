@@ -1,0 +1,6 @@
+notes
+node_modules/
+src/dist/main.js
+static/bundle.js*
+**/__pycache__/
+**/.DS_Store
