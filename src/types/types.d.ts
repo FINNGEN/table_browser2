@@ -3,6 +3,7 @@ export type TableProps = {
 };
 
 export interface ApiError {
+  status: string;
   data: {
     message: string;
     status: number;
@@ -27,6 +28,7 @@ export interface VariantResult {
   is_top_pheno?: boolean;
   is_top_variant?: boolean;
   anno?: VariantAnnotation;
+  possible_explaining_signals: string;
 }
 
 export interface VariantAnnotation {

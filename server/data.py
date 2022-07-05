@@ -84,8 +84,9 @@ class Datafetch(object):
              'mlogp_chip',
              'beta_add',
              'beta_rec',
-             'beta_chip']
-             ].to_dict(orient='records')
+             'beta_chip',
+             'possible_explaining_signals']
+             ].fillna('NA').to_dict(orient='records')
         indices = {}
         for res in top_list:
             indices[self.variant2index[res['variant']]] = True

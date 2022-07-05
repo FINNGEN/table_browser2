@@ -12,6 +12,8 @@
     "p-val chip": "additive model p-value from chip genotype data",
     "beta": "additive model effect size beta from imputed data",
     "beta rec": "recessive model effect size beta from imputed data",
-    "beta chip": "additive model effect size beta from chip genotype data"
+    "beta chip": "additive model effect size beta from chip genotype data",
+    "rec-add": "recessive -log10(p) minus additive -log10(p)<br/>positive values mean recessive signal is more significant",
+    "leads": "data on possible more significant non-coding lead variants in the region"
   }
 }
