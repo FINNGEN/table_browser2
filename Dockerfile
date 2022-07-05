@@ -7,6 +7,7 @@ RUN npm install -D webpack-cli
 COPY ./ ./
 
 RUN pip3 install -r requirements.txt
+RUN npm install
 RUN npx webpack --mode production
 
 EXPOSE 8080
