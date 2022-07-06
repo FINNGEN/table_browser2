@@ -462,16 +462,23 @@ export const ResultTable = () => {
           //adding tooltip here unlike the other tooltips
           //because otherwise pagination and filtering break the tip
           let tt = null;
+          let maxDiff = 0; // if the non-coding association is much stronger, warn about it
           if (e.value != null) {
             const rows = e.value.split(";").map((row: string) => {
               const cols = row.split(",");
               cols[0] = cols[0]
                 .split(":")
                 .map((f, i) => {
-                  console.log(f, i);
                   return i == 0 && f == "23" ? "X" : f;
                 })
                 .join("-");
+              const compare =
+                e.row.original.mlogp_add == null
+                  ? e.row.original.mlogp_chip
+                  : e.row.original.mlogp_add;
+              if (Number(cols[1]) - compare > maxDiff) {
+                maxDiff = Number(cols[1]) - compare;
+              }
               return `<tr>
               <td><a style="color: white;" target="_blank" href="https://results.finngen.fi/variant/${
                 cols[0]
@@ -509,7 +516,18 @@ export const ResultTable = () => {
                 effect="solid"
                 event="click"
               />
-              <span data-tip={tt} data-for="tooltip-lead">
+              <span
+                style={{
+                  color:
+                    maxDiff > 2
+                      ? "#aa0000"
+                      : maxDiff > 0
+                      ? "#aaaa00"
+                      : "#000000",
+                }}
+                data-tip={tt}
+                data-for="tooltip-lead"
+              >
                 {e.value == null ? "NA" : "click"}
               </span>
             </>
