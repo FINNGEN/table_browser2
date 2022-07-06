@@ -5,6 +5,10 @@ body {
   font-size: 0.8em;
 }
 
+.__react_component_tooltip {
+  pointer-events: auto !important;
+}
+
 #reactEntry,
 html,
 body {
@@ -12,11 +16,12 @@ body {
   margin: 0;
 }
 
-table {
-  border: solid;
+.maintable table {
+  width: "100%";
+  border: 0;
 }
 
-tr:nth-of-type(even) {
+.maintable > tbody > tr:nth-of-type(even) {
   background: #eeeeee;
 }
 

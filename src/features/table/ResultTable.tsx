@@ -33,8 +33,21 @@ import config from "../../../config.json";
 
 const typedConfig: { [key: string]: any } = config;
 
+const pval_repr = (mlogp: number) => {
+  const p = Math.pow(10, -mlogp);
+  let repr = p.toExponential(2);
+  // in case of underflow hack the string together
+  if (p == 0) {
+    const digits =
+      Math.round(1000 * Math.pow(10, -(mlogp - Math.floor(mlogp)))) / 100;
+    const exp = Math.ceil(mlogp);
+    repr = `${digits}e-${exp}`;
+  }
+  return repr;
+};
+
 // https://github.com/TanStack/react-table/discussions/2022
-function useSomeGuysFlexLayout(hooks: any) {
+const useSomeGuysFlexLayout = (hooks: any) => {
   const getRowStyles = (props: any) => [
     props,
     {
@@ -73,7 +86,7 @@ function useSomeGuysFlexLayout(hooks: any) {
   hooks.getHeaderGroupProps.push(getRowStyles);
   hooks.getHeaderProps.push(getHeaderProps);
   hooks.getCellProps.push(getCellProps);
-}
+};
 
 export const ResultTable = () => {
   let params = useParams<TableProps>();
@@ -170,11 +183,6 @@ export const ResultTable = () => {
           if (e.cell.row.original.mlogp_chip) {
             return (
               <>
-                <ReactTooltip
-                  place="right"
-                  arrowColor="transparent"
-                  html={true}
-                />
                 <span
                   style={{ textDecoration: "underline dotted" }}
                   data-html={true}
@@ -185,6 +193,7 @@ export const ResultTable = () => {
                       src={`/api/v1/cluster_plot/${e.value}`}
                     />
                   )}
+                  data-for="tooltip-clusterplot"
                 >
                   {e.value}
                 </span>
@@ -199,6 +208,7 @@ export const ResultTable = () => {
                     this variant is not on chip or has not passed chip QC
                   </span>
                 )}
+                data-for="tooltip-clusterplot"
               >
                 {e.value}
               </span>
@@ -307,18 +317,15 @@ export const ResultTable = () => {
         Filter: NumberFilter,
         filter: filterAbsGreaterThan,
         Cell: ({ value }) => {
-          const p = Math.pow(10, -value);
-          let repr = p.toExponential(2);
-          // in case of underflow hack the string together
-          if (p == 0) {
-            const digits =
-              Math.round(1000 * Math.pow(10, -(value - Math.floor(value)))) /
-              100;
-            const exp = Math.ceil(value);
-            repr = `${digits}e-${exp}`;
-          }
+          const repr = pval_repr(value);
           return (
-            <span style={value == null || p > 5e-8 ? { color: "#777777" } : {}}>
+            <span
+              style={
+                value == null || Math.pow(10, -value) > 5e-8
+                  ? { color: "#777777" }
+                  : {}
+              }
+            >
               {value == null ? "NA" : repr}
             </span>
           );
@@ -445,6 +452,88 @@ export const ResultTable = () => {
           <span>{e.value == null ? "NA" : e.value.toPrecision(3)}</span>
         ),
       },
+      {
+        Header: "leads",
+        accessor: "possible_explaining_signals",
+        width: 1,
+        disableFilters: true,
+        disableSortBy: true,
+        Cell: (e: CellProps<VariantResult>) => {
+          //adding tooltip here unlike the other tooltips
+          //because otherwise pagination and filtering break the tip
+          let tt = null;
+          let maxDiff = 0; // if the non-coding association is much stronger, warn about it
+          if (e.value != null) {
+            const rows = e.value.split(";").map((row: string) => {
+              const cols = row.split(",");
+              cols[0] = cols[0]
+                .split(":")
+                .map((f, i) => {
+                  return i == 0 && f == "23" ? "X" : f;
+                })
+                .join("-");
+              const compare =
+                e.row.original.mlogp_add == null
+                  ? e.row.original.mlogp_chip
+                  : e.row.original.mlogp_add;
+              if (Number(cols[1]) - compare > maxDiff) {
+                maxDiff = Number(cols[1]) - compare;
+              }
+              return `<tr>
+              <td><a style="color: white;" target="_blank" href="https://results.finngen.fi/variant/${
+                cols[0]
+              }">${cols[0]}</a></td>
+              <td style="padding-left: 10px">${pval_repr(
+                Number(cols[1])
+              )}</td><td style="padding-left: 10px">${
+                cols[2] == "NA" ? cols[2] : Number(cols[2]).toPrecision(3)
+              }</td>
+              </tr>`;
+            });
+            tt = `<div>
+                  <span>in this region there are variants that are <br/>stronger than the coding variant<br/>and may explain the association:</span>
+                  <table class="tooltiptable">
+                  <thead>
+                  <tr>
+                  <th>lead variant</th>
+                  <th style="padding-left: 10px">p-val</th>
+                  <th style="padding-left: 10px">LD r2 to coding</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  ${rows.join("")}
+                  </tbody>
+                  <table>
+                  </div>`;
+          }
+          return (
+            <>
+              <ReactTooltip
+                id="tooltip-lead"
+                place="left"
+                arrowColor="transparent"
+                html={true}
+                effect="solid"
+                event="click"
+              />
+              <span
+                style={{
+                  color:
+                    maxDiff > 2
+                      ? "#aa0000"
+                      : maxDiff > 0
+                      ? "#aaaa00"
+                      : "#000000",
+                }}
+                data-tip={tt}
+                data-for="tooltip-lead"
+              >
+                {e.value == null ? "NA" : "click"}
+              </span>
+            </>
+          );
+        },
+      },
     ],
     []
   );
@@ -528,13 +617,11 @@ export const ResultTable = () => {
   }
   if (isError) {
     if ("data" in error!) {
-      return <div style={{ height: "100%" }}>{error.data.message}</div>;
+      return <div style={{ height: "100%" }}>{error.status}</div>;
     }
     return <div style={{ height: "100%" }}>{error}</div>;
   }
   if (isSuccess) {
-    //ReactTooltip.rebuild();
-    //console.log(data);
     return (
       <>
         {params.query ? (
@@ -548,7 +635,19 @@ export const ResultTable = () => {
             (excluding HLA and APOE)
           </div>
         )}
-        <table {...getTableProps()} style={{ width: "100%", border: 0 }}>
+        <ReactTooltip
+          id="tooltip-clusterplot"
+          place="right"
+          arrowColor="transparent"
+          html={true}
+        />
+        <ReactTooltip
+          id="tooltip-header"
+          place="right"
+          arrowColor="transparent"
+          html={true}
+        />
+        <table className="maintable" {...getTableProps()}>
           <thead>
             {headerGroups.map((headerGroup) => (
               <tr {...headerGroup.getHeaderGroupProps()}>
@@ -561,7 +660,10 @@ export const ResultTable = () => {
                       column.toggleSortBy(!column.isSortedDesc)
                     }
                   >
-                    <span data-tip={typedConfig.tip[column.Header!.toString()]}>
+                    <span
+                      data-tip={typedConfig.tip[column.Header!.toString()]}
+                      data-for="tooltip-header"
+                    >
                       {column.render("Header")}
                       {column.isSorted ? (
                         column.isSortedDesc ? (
