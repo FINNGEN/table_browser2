@@ -64,7 +64,7 @@ const useSomeGuysFlexLayout = (hooks: any) => {
         flex: column.width,
         minWidth: column.minWidth,
         cursor: column.disableSortBy ? "default" : "pointer",
-        overflowX: "scroll",
+        overflowX: "hidden",
       },
     },
   ];
@@ -76,7 +76,7 @@ const useSomeGuysFlexLayout = (hooks: any) => {
         style: {
           flex: cell.column.width,
           minWidth: cell.column.minWidth,
-          overflowX: "scroll",
+          overflowX: "hidden",
         },
       },
     ];
