@@ -5,6 +5,8 @@ For the browser, we need two kinds of data:
 1. Coding variant annotations
 2. Summary stats of additive analysis, possibly also of recessive and chip analyses
 
+Locally run scripts used in this README are under [scripts](scripts) and workflows are under [nf](nf).
+
 ### Coding variant annotations
 
 We need a variant annotation file for coding variants, imputed and chip combined. The annotation file is read in-memory in table_browser2.
@@ -77,11 +79,9 @@ bgzip r10_imp_chip_anno.tsv && tabix -s 3 -b 4 -e 4 r10_imp_chip_anno.tsv.gz
 
 The annotation file created above is the one used by the application. Here we add some things to help with homozygote deficiency analysis.
 
-Create a bgen file of coding variants and compute snpstats with a GP threshold of 0.9 to get high-probability homozygotes as per imputation:
+Create a bgen file of coding variants and compute snpstats with a GP threshold of 0.9 to get high-probability homozygotes as per imputation with [this Nextflow worklow](nf/filter_bgen_by_variants/filter_bgen_by_variants.nf). See tower VM config files for accessToken and SMTP password configurations.
 
-`filter_bgen_by_variants.nf`
-
-Munge:
+Munge out extra headers (we could fix the workflow up front preferably):
 
 ```
 gsutil cp gs://r10-data/bgen/filtered.snpstats .
@@ -158,9 +158,9 @@ d.merge(n, how="left", on="variant").to_csv("r10_imp_chip_anno_proflevel_nchip.t
 
 We put coding variant results of imputed additive, imputed recessive and chip additive analyses to tiledb. tiledb is then used to serve data for a web interface.
 
-Get coding variant summary stats for the three analysis types on a laptop or VM:
+First let's filter the sumstats of additive scans to coding variants only using [this Nextflow workflow](nf/filter_gwas/filter_only_gwas.nf). See tower VM config files for accessToken and SMTP password configurations.
 
-TODO how was the filtering of additive done
+Then get coding variant summary stats for the three analysis types on a laptop or VM:
 
 ```
 mkdir -p data/add data/rec data/chip
