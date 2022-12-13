@@ -26,7 +26,7 @@ render(
             html={true}
           />
           <span className="title">
-            FinnGen freeze 9 coding variant result browser
+            {config.title}
           </span>
           <span className="help" data-tip={config.help}>
             ?
