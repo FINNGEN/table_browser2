@@ -1,0 +1,6 @@
+{
+  "filter_only_gwas.variants": "gs://r10-data/annotation/r10_imp_anno_coding_INFO0.6.variants.gz",
+  "filter_only_gwas.docker": "eu.gcr.io/finngen-refinery-dev/saige:0.39.1-fg-pysam",
+  "filter_only_gwas.sumstatfiles": "gs://r10-data/finemap/infofilter/summstatslist"
+}
+
