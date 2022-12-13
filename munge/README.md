@@ -216,6 +216,8 @@ python3 tiledb_import_sparse.py r9_coding_tiledb analyzed_merged_sumstats mlogp_
 Create `phenos.json` for web table
 
 ```
+cat analyzed_merged_sumstats | xargs -I {} basename {} .gz > analyzed_merged_phenos
+# ..remove any unwanted phenos from analyzed_merged_phenos, e.g. quantitative *_IRN ones
 python3 create_phenolist.py analyzed_merged_phenos FINNGEN_ENDPOINTS_DF9_Final_2021-11-23_corrected.names_tagged_ordered.txt
 ```
 
