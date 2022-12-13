@@ -88,7 +88,7 @@ def results(query):
 def cluster_plot(variant: str):
     var = Variant(variant)
     data = cloud_storage.read_bytes(
-        config['cluster_plot_bucket'], config['cluster_plot_loc'] + var.ot_repr() + '.png')
+        config['cluster_plot_bucket'], config['cluster_plot_loc'] + var.ot_repr() + '.raw.png')
     if data is None:
         abort(404, 'Requested cluster plot not found!')
     return data
@@ -99,7 +99,7 @@ def cluster_plot(variant: str):
 def easter_plot(variant: str):
     var = Variant(variant)
     data = cloud_storage.read_bytes(
-        config['cluster_plot_bucket'], config['cluster_plot_loc'] + var.ot_repr() + '.png')
+        config['cluster_plot_bucket'], config['cluster_plot_loc'] + var.ot_repr() + '.raw.png')
     if data is None:
         abort(404, 'Requested cluster plot not found!')
     response = make_response(data)
