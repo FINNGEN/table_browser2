@@ -16,7 +16,7 @@ The annotation file is required for importing summary stats to tiledb because it
 To create the annotation file, we need 1) chip coding variant annotations 2) imputed coding variant annotations. See [finngen-analysis-overview chip data preparation](https://github.com/FINNGEN/finngen-analysis-overview/tree/master/chip) for creation of 1). For 2), to filter imputed annotation file to coding INFO > 0.6 variants, do something like:
 
 ```
-zcat R10_annotated_variants_v0.gz | \
+zcat R10_annotated_variants_v2.gz | \
 awk '
 BEGIN{OFS="\t";
 a["transcript_ablation"]=1
@@ -145,7 +145,7 @@ Ad hoc addition of column of how many batches went into imputation
 
 ```
 cut -f1 r10_imp_chip_anno_proflevel.tsv | tail -n+2 > proflevel_vars
-awk 'NR==FNR{a[$1]=1} NR>FNR&&(FNR==1||($1 in a))' proflevel_vars <(zcat R10_annotated_variants_v0.gz) | bgzip > proflevel_vars_anno.gz
+awk 'NR==FNR{a[$1]=1} NR>FNR&&(FNR==1||($1 in a))' proflevel_vars <(zcat R10_annotated_variants_v2.gz) | bgzip > proflevel_vars_anno.gz
 zcat proflevel_vars_anno.gz | awk 'BEGIN{OFS="\t"}NR==1{for(i=1;i<=NF;i++) if($i~"^CHIP_Axiom") use[i]=1; print "variant","n_chip"} NR>1{n=0; for(i in use) if($i==1) n++; print $1,n}' > proflevel_vars_nchip
 
 import pandas
@@ -158,21 +158,21 @@ d.merge(n, how="left", on="variant").to_csv("r10_imp_chip_anno_proflevel_nchip.t
 
 We put coding variant results of imputed additive, imputed recessive and chip additive analyses to tiledb. tiledb is then used to serve data for a web interface.
 
-First let's filter the sumstats of additive scans to coding variants only using [this Nextflow workflow](nf/filter_gwas/filter_only_gwas.nf). See tower VM config files for accessToken and SMTP password configurations.
+First let's filter the sumstats of additive scans to coding variants only using [this Nextflow workflow](nf/filter_gwas/filter_only_gwas.nf). Use tower VM `/mnt/disks/tower/nextflow/env.sh` to set the needed environment variables. Then run: `nextflow run filter_only_gwas.nf -c nextflow.config -profile gls -resume`
 
-Then get coding variant summary stats for the three analysis types on a laptop or VM:
+Then get coding variant summary stats for the three analysis types:
 
 ```
 mkdir -p data/add data/rec data/chip
-gsutil -mq cp gs://r9-data/regenie/release/output/summary_stats_coding_INFO_06/filtered/*.gz data/add/
-gsutil -mq cp gs://r9-data/recessive/results/*.gz data/rec/
-gsutil -mq cp gs://r9-data/chip/regenie/munged/*.gz data/chip/
+gsutil -mq cp gs://r10-data/regenie/release/summary_stats_coding_INFO_06/filtered/*.gz data/add/
+gsutil -mq cp gs://r10-data/regenie/release/recessive/*.gz data/rec/
+gsutil -mq cp gs://r10-data/chip/regenie/summary_stats/*.gz data/chip/
 ```
 
 Get list of analyzed phenos in any of the three analyses:
 
 ```
-cat <(ls -1 data/add/*.gz | xargs -I {} basename {} .gz) <(ls -1 data/rec/*.gz | xargs -I {} basename {} .gz) <(ls -1 data/chip/*.gz | xargs -I {} basename {} .gz) | sort -u > analyzed_phenos
+ls -1 data/add/*.gz data/rec/*.gz data/chip/*.gz | xargs -I {} basename {} .gz | sort -u > analyzed_phenos
 ```
 
 Create a config file like:
@@ -210,15 +210,16 @@ Then shove sumstats to tiledb:
 
 ```
 ls -1 merged/*.gz > analyzed_merged_sumstats
-python3 tiledb_import_sparse.py r9_coding_tiledb analyzed_merged_sumstats mlogp_add,beta_add,sebeta_add,af_alt_cases_add,af_alt_controls_add,mlogp_rec,beta_rec,sebeta_rec,mlogp_chip,beta_chip,sebeta_chip data/r9_imp_chip_anno.tsv.gz
+python3 tiledb_import_sparse.py r10_coding_tiledb analyzed_merged_sumstats mlogp_add,beta_add,sebeta_add,af_alt_cases_add,af_alt_controls_add,mlogp_rec,beta_rec,sebeta_rec,mlogp_chip,beta_chip,sebeta_chip data/r10_imp_chip_anno.tsv.gz
 ```
 
-Create `phenos.json` for web table
+Get endpoint definition file and create `phenos.json` for web table
 
 ```
+gsutil cp gs://finngen-production-library-red/finngen_R10/phenotype_1.0/documentation/finngen_R10_endpoint_definitions_1.0.txt .
 cat analyzed_merged_sumstats | xargs -I {} basename {} .gz > analyzed_merged_phenos
 # ..remove any unwanted phenos from analyzed_merged_phenos, e.g. quantitative *_IRN ones
-python3 create_phenolist.py analyzed_merged_phenos FINNGEN_ENDPOINTS_DF9_Final_2021-11-23_corrected.names_tagged_ordered.txt
+python3 create_phenolist.py analyzed_merged_phenos finngen_R10_endpoint_definitions_1.0.txt
 ```
 
 ### Create one file with all p < 1e-5 associations
@@ -241,18 +242,18 @@ df['variant'] = df['chrom'].astype(str).replace('23', 'X') + '-' + df['pos'].ast
 df = df[~((df['chrom'] == 6) & (df['pos'] > 23000000) & (df['pos'] < 38000000)) & ~((df['chrom'] == 19) & (df['pos'] > 43000000) & (df['pos'] < 46000000))]
 # remove extra quant runs, might as well remove the files up front
 df = df[~((df['pheno'] == 'WEIGHT') | (df['pheno'] == 'HEIGHT') | (df['pheno'] == 'BMI'))]
-df.to_csv('R9_coding_variant_results_1e-5.tsv', na_rep='NA', sep='\t', index=False)
+df.to_csv('R10_coding_variant_results_1e-5.tsv', na_rep='NA', sep='\t', index=False)
 ```
 
 Join data on more significant associations from compared_joined.tsv:
 
 ```
-d = pd.read_csv('R9_coding_variant_results_1e-5.tsv', sep='\t')
+d = pd.read_csv('R10_coding_variant_results_1e-5.tsv', sep='\t')
 a = pd.read_csv('compared_joined.tsv', sep='\t')[['pheno', 'variant', 'strongest_association', 'strongest_hit', 'possible_explaining_signals', 'signal_connection_type']]
 a['variant'] = a['variant'].str.replace(':','-')
 a['variant'] = a['variant'].str.replace('^23','X')
 j = d.merge(a, on=['variant', 'pheno'])
-j.to_csv('R9_coding_variant_results_1e-5_signals.tsv', index=False, sep='\t', na_rep="NA")
+j.to_csv('R10_coding_variant_results_1e-5_signals.tsv', index=False, sep='\t', na_rep="NA")
 ```
 
-`R9_coding_variant_results_1e-5_signals.tsv` is then used in table_browser2 config.py
+`R10_coding_variant_results_1e-5_signals.tsv` is then used in table_browser2 config.py
