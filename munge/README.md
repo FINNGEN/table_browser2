@@ -218,9 +218,10 @@ Get endpoint definition file and create `phenos.json` for web table
 ```
 gsutil cp gs://finngen-production-library-red/finngen_R10/phenotype_1.0/documentation/finngen_R10_endpoint_definitions_1.0.txt .
 cat analyzed_merged_sumstats | xargs -I {} basename {} .gz > analyzed_merged_phenos
-# ..remove any unwanted phenos from analyzed_merged_phenos, e.g. quantitative *_IRN ones
-python3 create_phenolist.py analyzed_merged_phenos finngen_R10_endpoint_definitions_1.0.txt
+python3 create_phenolist.py analyzed_merged_phenos finngen_R10_endpoint_core_noncore_1.0.tsv
 ```
+
+Phenotypes not in the `finngen_R10_endpoint_core_noncore_1.0.tsv` definition file (e.g. _IRN quants) will need to be manually added to `phenos.json`
 
 ### Create one file with all p < 1e-5 associations
 
